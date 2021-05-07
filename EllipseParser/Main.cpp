@@ -6,6 +6,8 @@
 #include <chrono>
 #include <math.h>
 
+#include <filesystem>
+namespace fs = std::filesystem;
 #include <Eigen/Dense>
 using namespace Eigen;
 
@@ -169,43 +171,33 @@ void save(EllipseParams params, float elapsedTime, char* fileName){
 }
 
 
-int main(int argc, char** argv) {
-	/*struct ellipseABCDEF e = fitEllipse(
-		{ 1.34, -0.396 },
-		{ 0.483, -2.194 },
-		{ 1.801, -3.136 }, 
-		{ 0.683, -0.154 },
-		{ 1.985, -1.072 }
-	);
+void ParseEllipse(std::string path) { 
+	TIFF* tif = TIFFOpen(path.c_str(), "r");
 
-
-
-	std::cout << e.A << " " << e.B << " " << e.C << " " << e.D << " " << e.E << " " << e.F << " ";
-
-	return 0;
-	*/
-	
-	TIFF* tif = TIFFOpen("./test/2018-02-15 19.22.13.141000.tiff", "r");
+	if (tif == nullptr) {
+		std::cout << path << " is not a valid TIFF image!" << std::endl << std::endl;
+		return;
+	}
 
 	uint32 width, height;
 
 	TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width);           // uint32 width;
 	TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);        // uint32 height;
 
-	printf("width: %d\nheight: %d\n", width, height);
+	std::cout << std::endl << "Image: " << path << std::endl;
+	printf("Width: %d\nHeight: %d\n", width, height);
 
 	uint16* raster = (uint16*)_TIFFmalloc(width * height * sizeof(uint16));
 
 	for (uint32 row = 0; row < height; row++) {
 		TIFFReadScanline(tif, raster + width * row, row, 0);
 	}
-	
+
 	uint64 average = 0;
 	for (uint32 i = 0; i < width * height; i++) {
 		average += uint64(raster[i]);
 	}
 
-	std::cout << average / (uint64(width) * uint64(height)) << std::endl;
 
 
 	//Time Taken
@@ -214,7 +206,7 @@ int main(int argc, char** argv) {
 
 	finalAverage = average / (uint64(width) * uint64(height)) * 1;
 
-	std::cout << finalAverage << std::endl;
+
 
 
 
@@ -235,7 +227,6 @@ int main(int argc, char** argv) {
 		std::vector<struct Point>()
 	};
 
-	std::cout << validateEdge(considered, { 393, 341 }, width, height);
 
 
 	for (uint32 y = 0; y < height; y++) {
@@ -252,8 +243,6 @@ int main(int argc, char** argv) {
 
 			uint32 newX = x, newY = y;
 
-			printf("newX %lu newY %lu\n", newX, newY);
-
 			struct Point nearbyInitial[8] = {
 				{newX - 1, newY - 1},
 				{newX + 0, newY - 1},
@@ -268,7 +257,7 @@ int main(int argc, char** argv) {
 			uint32 part = 0;
 			uint32 firstPointIndex = 0;
 
-			
+
 
 			while (part < 2 && firstPointIndex < 8) {
 				newX = nearbyInitial[firstPointIndex].x;
@@ -318,8 +307,6 @@ int main(int argc, char** argv) {
 							paths[part].push_back({ newX, newY });
 
 
-							//printf("adding %lu %lu\n", newX, newY);
-
 							newX = tested.x;
 							newY = tested.y;
 
@@ -345,9 +332,8 @@ int main(int argc, char** argv) {
 				finalPath.reserve(sizePart1 + sizePart2);
 
 				for (int i = sizePart1 - 1; i >= 0; i--) {
-					//printf("%lu\n", i);
 					finalPath.push_back(paths[0][i]);
-					
+
 				}
 
 				int a = 0;
@@ -358,21 +344,20 @@ int main(int argc, char** argv) {
 
 				paths[0] = std::vector<struct Point>();
 				paths[1] = std::vector<struct Point>();
-		
+
 				sequences.push_back(finalPath);
-			} else {
+			}
+			else {
 				paths[0].clear();
 				paths[1].clear();
 			}
 		}
 	}
 
-	printf("%d paths\n", sequences.size());
-
 	if (sequences.size() == 0) {
 		//NO ELLIPSE AT ALL
 	}
-	
+
 	uint32 maxLength = 0;
 	uint32 longestIndex = 0;
 	for (uint32 i = 0; i < sequences.size(); i++) {
@@ -381,7 +366,7 @@ int main(int argc, char** argv) {
 			longestIndex = i;
 		}
 	}
-	
+
 	std::vector<struct Point> longest = sequences[longestIndex];
 
 
@@ -393,7 +378,7 @@ int main(int argc, char** argv) {
 
 	//Itterate through
 	for (int nCurrItteration = 0; nCurrItteration < nMaxSampleItterations; nCurrItteration++) {
-		
+
 		//Populate samples 
 		int nPointDistance = longest.size() / (5 + 2 * nCurrItteration);
 
@@ -412,7 +397,7 @@ int main(int argc, char** argv) {
 			}
 
 			EllipseParams eFitEllipse = toElipseParams(fitEllipse(pSamples[0], pSamples[1], pSamples[2], pSamples[3], pSamples[4]));
-			std::cout << eFitEllipse.fCenterX << " " << -eFitEllipse.fCenterY << " " << eFitEllipse.fLongLenght << " " << eFitEllipse.fShortLength << std::endl;
+			//std::cout << eFitEllipse.fCenterX << " " << -eFitEllipse.fCenterY << " " << eFitEllipse.fLongLenght << " " << eFitEllipse.fShortLength << std::endl;
 
 			//Update offset for next itteration
 			nCurrOffset++;
@@ -422,14 +407,34 @@ int main(int argc, char** argv) {
 	auto timeEnd = std::chrono::system_clock::now();
 
 	std::chrono::duration<float> elapsedTime = timeEnd - timeStart;
-	std::cout << std::endl << "Finding best ellipse took: " << elapsedTime.count() << " s" << std::endl;
-
-	sampletext game = sampletext(raster);
-
-	if (game.Construct(width, height, 1, 1, false, false))
-		game.Start();
+	std::cout << "Finding best ellipse took: " << elapsedTime.count() << " s" << std::endl;
 
 	TIFFClose(tif);
-	return 0;
+	//free mallocs
 }
 
+int main(int argc, char** argv) {
+
+	if (argc == 1) {
+		std::cout << "No input directory provided! Exiting..." << std::endl;
+		return 0;
+	}
+
+	std::string path(argv[1]);
+	try {
+		for (const auto& entry : fs::recursive_directory_iterator(path))
+			ParseEllipse(entry.path().string());
+	}
+	catch (std::exception e) {
+		std::cout << argv[1] << " is not a valid folder!" << std::endl;
+	}
+
+
+
+	/*sampletext game = sampletext(raster);
+
+	if (game.Construct(width, height, 1, 1, false, false))
+		game.Start();*/
+
+	return 0;
+}
