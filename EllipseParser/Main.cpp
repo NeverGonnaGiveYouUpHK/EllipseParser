@@ -1,7 +1,7 @@
 #include <libtiff/tiffio.h>
 
 #include <iostream>
-
+#include <chrono>
 #include <math.h>
 
 #include <Eigen/Dense>
@@ -27,32 +27,29 @@ struct ellipseABCDEF {
 struct ellipseABCDEF fitEllipse(struct Point p1, struct Point p2, struct Point p3, struct Point p4, struct Point p5) {
 	Matrix<double, 5, 6> mat56(5, 6);
 	mat56 << 
-		p1.x * p1.x, p1.y * p1.y, p1.x * p1.y, p1.x, p1.y, 1,
-		p2.x * p2.x, p2.y * p2.y, p2.x * p2.y, p2.x, p2.y, 1,
-		p3.x * p3.x, p3.y * p3.y, p3.x * p3.y, p3.x, p3.y, 1,
-		p4.x * p4.x, p4.y * p4.y, p4.x * p4.y, p4.x, p4.y, 1,
-		p5.x * p5.x, p5.y * p5.y, p5.x * p5.y, p5.x, p5.y, 1;
+		(double)p1.x * (double)p1.x, (double)p1.y * (double)p1.y, (double)p1.x * (double)p1.y, (double)p1.x, (double)p1.y, 1,
+		(double)p2.x * (double)p2.x, (double)p2.y * (double)p2.y, (double)p2.x * (double)p2.y, (double)p2.x, (double)p2.y, 1,
+		(double)p3.x * (double)p3.x, (double)p3.y * (double)p3.y, (double)p3.x * (double)p3.y, (double)p3.x, (double)p3.y, 1,
+		(double)p4.x * (double)p4.x, (double)p4.y * (double)p4.y, (double)p4.x * (double)p4.y, (double)p4.x, (double)p4.y, 1,
+		(double)p5.x * (double)p5.x, (double)p5.y * (double)p5.y, (double)p5.x * (double)p5.y, (double)p5.x, (double)p5.y, 1;
 	
-	CompleteOrthogonalDecomposition<Matrix<double, 5, 6> > cod;
+	CompleteOrthogonalDecomposition<Matrix<double, Dynamic, Dynamic> > cod;
 	cod.compute(mat56);
-	std::cout << "rank : " << cod.rank() << "\n";
+
+
 	// Find URV^T
 	MatrixXd V = cod.matrixZ().transpose();
 	MatrixXd Null_space = V.block(0, cod.rank(), V.rows(), V.cols() - cod.rank());
 	MatrixXd P = cod.colsPermutation();
 	Null_space = P * Null_space; // Unpermute the columns
-	// The Null space:
-	std::cout << "The null space: \n" << Null_space << "\n";
-	// Check that it is the null-space:
-	std::cout << "mat56 * Null_space = \n" << mat56 * Null_space << '\n';
 
 	return {
-		Null_space(0),
-		Null_space(1),
-		Null_space(2),
-		Null_space(3),
-		Null_space(4),
-		Null_space(5)
+		Null_space(0) / Null_space(5),
+		Null_space(1) / Null_space(5),
+		Null_space(2) / Null_space(5),
+		Null_space(3) / Null_space(5),
+		Null_space(4) / Null_space(5),
+		1
 	};
 }
 
@@ -114,8 +111,29 @@ bool validateEdge(bool* considered, struct Point point, uint32 width, uint32 hei
 	return false;
 }
 
+struct EllipseParams {
+	double fCenterX, fCenterY;
+	double fLongLenght, fShortLength;
+	double fAngle;
+};
+
+EllipseParams toElipseParams(ellipseABCDEF a) {
+
+	EllipseParams eOutParams;
+
+	eOutParams.fCenterX = ((2 * a.C * a.D) - (a.B * a.E)) / ((a.B * a.B) - (4 * a.A * a.C));
+	eOutParams.fCenterY = ((2 * a.A * a.E) - (a.B * a.E)) / ((a.B * a.B) - (4 * a.A * a.C));
+
+
+	return eOutParams;
+}
 
 int main(int argc, char** argv) {
+
+	//Time Taken
+	auto timeStart = std::chrono::system_clock::now();
+
+
 	TIFF* tif = TIFFOpen("./test/2018-02-15 19.22.13.141000.tiff", "r");
 
 	uint32 width, height;
@@ -126,8 +144,6 @@ int main(int argc, char** argv) {
 	printf("width: %d\nheight: %d\n", width, height);
 
 	uint16* raster = (uint16*)_TIFFmalloc(width * height * sizeof(uint16));
-
-	
 
 	for (uint32 row = 0; row < height; row++) {
 		TIFFReadScanline(tif, raster + width * row, row, 0);
@@ -170,13 +186,8 @@ int main(int argc, char** argv) {
 		for (uint32 x = 0; x < width; x++) {
 			uint32 indexInitial = y * width + x;
 
-			//std::cout << (alreadyTaken[indexInitial] || !considered[indexInitial]) << std::endl;
-
 			if (alreadyTaken[indexInitial] || !considered[indexInitial]) {
 				continue;
-			}
-			else {
-				//printf("sample\n");
 			}
 
 			if (!validateEdge(considered, { x, y }, width, height)) {
@@ -319,9 +330,42 @@ int main(int argc, char** argv) {
 
 
 
+	//Sampling
+	Point pSamples[5];
+	const int nMaxSampleItterations = 10; //Linear addition
 
 
+	//Itterate through
+	for (int nCurrItteration = 0; nCurrItteration < nMaxSampleItterations; nCurrItteration++) {
+		
+		//Populate samples 
+		int nPointDistance = longest.size() / (5 + 2 * nCurrItteration);
 
+		for (int i = 0; i < 5; i++) {
+			pSamples[i] = longest[i * nPointDistance];
+		}
+
+
+		int nCurrOffset = 0;
+		//Go through the path
+
+		while ((4 * nPointDistance + nCurrOffset) < longest.size()) {
+
+			for (int i = 0; i < 5; i++) {
+				pSamples[i] = longest[i * nPointDistance + nCurrOffset];
+			}
+
+			ellipseABCDEF eFitEllipse = fitEllipse(pSamples[0], pSamples[1], pSamples[2], pSamples[3], pSamples[4]);
+
+			//Update offset for next itteration
+			nCurrOffset++;
+		}
+	}
+
+	auto timeEnd = std::chrono::system_clock::now();
+
+	std::chrono::duration<float> elapsedTime = timeEnd - timeStart;
+	std::cout << std::endl << "Finding best ellipse took: " << elapsedTime.count() << " s" << std::endl;
 
 	sampletext game = sampletext(raster);
 

@@ -1,6 +1,7 @@
 ﻿  Main.cpp
-C:\Users\w1Lo\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(75,24): warning C4018: '<': signed/unsigned mismatch
-C:\Users\w1Lo\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(76,25): warning C4018: '<': signed/unsigned mismatch
-C:\Users\w1Lo\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(143,60): warning C4244: '=': conversion from 'uint64' to 'uint16', possible loss of data
-C:\Users\w1Lo\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(288,23): warning C4018: '<': signed/unsigned mismatch
+C:\Users\w1Lo\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(72,24): warning C4018: '<': signed/unsigned mismatch
+C:\Users\w1Lo\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(73,25): warning C4018: '<': signed/unsigned mismatch
+C:\Users\w1Lo\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(159,60): warning C4244: '=': conversion from 'uint64' to 'uint16', possible loss of data
+C:\Users\w1Lo\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(299,23): warning C4018: '<': signed/unsigned mismatch
+C:\Users\w1Lo\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(352,45): warning C4018: '<': signed/unsigned mismatch
   EllipseParser.vcxproj -> C:\Users\w1Lo\Documents\GitHub\EllipseParser\Debug\EllipseParser.exe
