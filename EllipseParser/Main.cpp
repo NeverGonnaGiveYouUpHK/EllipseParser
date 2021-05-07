@@ -69,9 +69,11 @@ static std::ofstream outStream("out.csv");
 class sampletext : public olc::PixelGameEngine {
 public:
 	uint16* content;
+	uint16 threshold;
 
-	sampletext(uint16* raster) {
+	sampletext(uint16* raster, uint16 avg) {
 		content = raster;
+		threshold = avg;
 	}
 	
 	virtual bool OnUserUpdate(float fElapsedTime) override {
@@ -81,7 +83,7 @@ public:
 	virtual bool OnUserCreate() override {
 		for (uint32 y = 0; y < ScreenHeight(); y++) {
 			for (uint32 x = 0; x < ScreenWidth(); x++) {
-				Draw(x, y, olc::Pixel(content[y * ScreenWidth() + x] > finalAverage ? 0 : 255, 0, 0));
+				Draw(x, y, olc::Pixel(content[y * ScreenWidth() + x] > threshold ? 0 : 255, 0, 0));
 			}
 		}
 		
@@ -175,7 +177,7 @@ void saveEllipse(bool empty, EllipseParams params, float elapsedTime, char* file
 	outStream << -params.fCenterY << ",";
 	outStream << params.fLongLength << ",";
 	outStream << params.fShortLength << ",";
-	outStream << rad2Deg(params.fAngle) << ",";
+	outStream << 360 - rad2Deg(params.fAngle) << ",";
 	outStream << (int)(elapsedTime * 1000) << std::endl;
 
 }
@@ -227,10 +229,7 @@ void ParseEllipse(std::string path) {
 		TIFFReadScanline(tif, raster + width * row, row, 0);
 	}
 
-	uint64 average = 0;
-	for (uint32 i = 0; i < width * height; i++) {
-		average += uint64(raster[i]);
-	}
+	
 
 
 
@@ -238,11 +237,27 @@ void ParseEllipse(std::string path) {
 	auto timeStart = std::chrono::system_clock::now();
 
 
-	finalAverage = average / (uint64(width) * uint64(height)) * 1;
+
+	uint32 maxLuminance = 0;
+
+	for (uint32 i = 0; i < width * height; i++) {
+		if (raster[i] > maxLuminance) {
+			maxLuminance = raster[i];
+		}
+	}
+
+	double fmaxLuminance = (double)maxLuminance;
+
+	double average = 0;
+
+	for (uint32 i = 0; i < width * height; i++) {
+		average += (1 - pow(exp(-(pow((double)raster[i] / fmaxLuminance, 2) / 0.5)), 64)) * fmaxLuminance;
+	}
+
+	average /= width * height;
 
 
-
-
+	finalAverage = (uint16)average;
 
 	bool* considered = (bool*)malloc(width * height * sizeof(bool));
 	bool* alreadyTaken = (bool*)calloc(width * height, sizeof(bool));
@@ -250,9 +265,19 @@ void ParseEllipse(std::string path) {
 	for (uint32 y = 0; y < height; y++) {
 		for (uint32 x = 0; x < width; x++) {
 			const uint32 index = y * width + x;
-			considered[index] = bool(raster[index] < finalAverage);
+
+			considered[index] = bool(raster[index] < fmaxLuminance * 0.45);
 		}
 	}
+
+
+
+	sampletext game = sampletext(raster, fmaxLuminance * 0.45);
+
+	if (game.Construct(width, height, 1, 1, false, false))
+		game.Start();
+
+
 
 	std::vector<std::vector<struct Point>> sequences;
 
@@ -474,13 +499,17 @@ void ParseEllipse(std::string path) {
 
 	TIFFClose(tif);
 	//free mallocs
+
+	_TIFFfree(raster);
+	free(considered);
+	free(alreadyTaken);
 }
 
 int main(int argc, char** argv) {
 
 	outStream << "filename,ellipse_center_x,ellipse_center_y,ellipse_majoraxis,ellipse_minoraxis,ellipse_angle,elapsed_time" << std::endl; //write the header
 
-	if (argc == 1) {
+	/*if (argc == 1) {
 		std::cout << "No input directory provided! Exiting..." << std::endl;
 		return 0;
 	}
@@ -492,14 +521,10 @@ int main(int argc, char** argv) {
 	}
 	catch (std::exception e) {
 		std::cout << argv[1] << " is not a valid folder!" << std::endl;
-	}
+	}*/
 
-	//ParseEllipse("./test/2018-02-15 19.22.13.141000.tiff");
+	ParseEllipse("./test/2018-02-15 18.35.42.911000.tiff");
 
-	/*sampletext game = sampletext(raster);
-
-	if (game.Construct(width, height, 1, 1, false, false))
-		game.Start();*/
 	outStream.close();
 
 	return 0;
