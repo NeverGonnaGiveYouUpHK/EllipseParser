@@ -1,6 +1,7 @@
 #include <libtiff/tiffio.h>
 
 #include <iostream>
+#include <fstream>
 #include <chrono>
 #include <math.h>
 
@@ -127,6 +128,25 @@ EllipseParams toElipseParams(ellipseABCDEF a) {
 
 	return eOutParams;
 }
+
+//filename, ellipse_center_x, ellipse_center_y, ellipse_majoraxis, ellipse_minoraxis, ellipse_angle, elapsed_time
+
+void save(EllipseParams params, float elapsedTime, char* fileName){
+
+	std::ofstream output(std::string(fileName) + ".csv");
+
+	output << fileName << ",";
+	output << params.fCenterX << ",";
+	output << params.fCenterY << ",";
+	output << params.fLongLenght << ",";
+	output << params.fShortLength << ",";
+	output << params.fAngle << ",";
+	output << (elapsedTime * 1000) << std::endl;
+
+	output.close();
+
+}
+
 
 int main(int argc, char** argv) {
 
