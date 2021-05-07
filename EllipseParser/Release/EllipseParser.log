@@ -1,13 +1,13 @@
 ﻿  Main.cpp
-C:\Users\matej\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(81,24): warning C4018: '<': signed/unsigned mismatch
-C:\Users\matej\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(82,25): warning C4018: '<': signed/unsigned mismatch
-C:\Users\matej\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(232,60): warning C4244: '=': conversion from 'uint64' to 'uint16', possible loss of data
-C:\Users\matej\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(366,23): warning C4018: '<': signed/unsigned mismatch
-C:\Users\matej\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(425,45): warning C4018: '<': signed/unsigned mismatch
-C:\Users\matej\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(436,22): warning C4018: '<': signed/unsigned mismatch
+C:\Users\w1Lo\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(82,24): warning C4018: '<': signed/unsigned mismatch
+C:\Users\w1Lo\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(83,25): warning C4018: '<': signed/unsigned mismatch
+C:\Users\w1Lo\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(241,60): warning C4244: '=': conversion from 'uint64' to 'uint16', possible loss of data
+C:\Users\w1Lo\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(375,23): warning C4018: '<': signed/unsigned mismatch
+C:\Users\w1Lo\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(440,45): warning C4018: '<': signed/unsigned mismatch
+C:\Users\w1Lo\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(451,22): warning C4018: '<': signed/unsigned mismatch
   Generating code
-  493 of 3981 functions (12.4%) were compiled, the rest were copied from previous compilation.
-    206 functions were new in current compilation
-    108 functions had inline decision re-evaluated but remain unchanged
+  2 of 3993 functions (<0.1%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    65 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
-  EllipseParser.vcxproj -> C:\Users\matej\Documents\GitHub\EllipseParser\Release\EllipseParser.exe
+  EllipseParser.vcxproj -> C:\Users\w1Lo\Documents\GitHub\EllipseParser\Release\EllipseParser.exe

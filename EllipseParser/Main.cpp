@@ -64,6 +64,7 @@ struct ellipseABCDEF fitEllipse(struct Point p1, struct Point p2, struct Point p
 
 
 static uint16 finalAverage;
+static std::ofstream outStream("out.csv");
 
 class sampletext : public olc::PixelGameEngine {
 public:
@@ -155,19 +156,27 @@ double rad2Deg(double rad) {
 
 //filename, ellipse_center_x, ellipse_center_y, ellipse_majoraxis, ellipse_minoraxis, ellipse_angle, elapsed_time
 
-void save(EllipseParams params, float elapsedTime, char* fileName){
+void saveEllipse(bool empty, EllipseParams params, float elapsedTime, char* fileName){
+	
+	if (empty) {
 
-	std::ofstream output(std::string(fileName) + ".csv");
+		outStream << fileName << ",";
+		outStream << ",";
+		outStream << ",";
+		outStream << ",";
+		outStream << ",";
+		outStream << ",";
+		outStream << (int)(elapsedTime * 1000) << std::endl;
+		return;
+	}
 
-	output << fileName << ",";
-	output << params.fCenterX << ",";
-	output << params.fCenterY << ",";
-	output << params.fLongLength << ",";
-	output << params.fShortLength << ",";
-	output << rad2Deg(params.fAngle) << ",";
-	output << (elapsedTime * 1000) << std::endl;
-
-	output.close();
+	outStream << fileName << ",";
+	outStream << params.fCenterX << ",";
+	outStream << -params.fCenterY << ",";
+	outStream << params.fLongLength << ",";
+	outStream << params.fShortLength << ",";
+	outStream << rad2Deg(params.fAngle) << ",";
+	outStream << (int)(elapsedTime * 1000) << std::endl;
 
 }
 
@@ -380,7 +389,13 @@ void ParseEllipse(std::string path) {
 	}
 
 	if (sequences.size() == 0) {
-		//SAVE EMPTY ELLIPSE
+
+		auto timeEnd = std::chrono::system_clock::now();
+
+		std::chrono::duration<float> elapsedTime = timeEnd - timeStart;
+		std::cout << "No ellipse found!" << std::endl;
+
+		saveEllipse(true, {}, elapsedTime.count(), (char*)fs::path(path).filename().string().c_str());
 		return;
 	}
 
@@ -455,11 +470,15 @@ void ParseEllipse(std::string path) {
 	std::chrono::duration<float> elapsedTime = timeEnd - timeStart;
 	std::cout << "Finding the best ellipse took: " << elapsedTime.count() << " s" << std::endl;
 
+	saveEllipse(false, bestFit, elapsedTime.count(), (char*)fs::path(path).filename().string().c_str());
+
 	TIFFClose(tif);
 	//free mallocs
 }
 
 int main(int argc, char** argv) {
+
+	outStream << "filename,ellipse_center_x,ellipse_center_y,ellipse_majoraxis,ellipse_minoraxis,ellipse_angle,elapsed_time" << std::endl; //write the header
 
 	if (argc == 1) {
 		std::cout << "No input directory provided! Exiting..." << std::endl;
@@ -481,6 +500,7 @@ int main(int argc, char** argv) {
 
 	if (game.Construct(width, height, 1, 1, false, false))
 		game.Start();*/
+	outStream.close();
 
 	return 0;
 }
