@@ -1,8 +1,0 @@
-﻿  Main.cpp
-C:\Users\matej\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(84,24): warning C4018: '<': signed/unsigned mismatch
-C:\Users\matej\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(85,25): warning C4018: '<': signed/unsigned mismatch
-C:\Users\matej\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(275,53): warning C4244: 'argument': conversion from 'double' to 'uint16', possible loss of data
-C:\Users\matej\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(400,23): warning C4018: '<': signed/unsigned mismatch
-C:\Users\matej\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(465,45): warning C4018: '<': signed/unsigned mismatch
-C:\Users\matej\Documents\GitHub\EllipseParser\EllipseParser\Main.cpp(476,22): warning C4018: '<': signed/unsigned mismatch
-  EllipseParser.vcxproj -> C:\Users\matej\Documents\GitHub\EllipseParser\Debug\EllipseParser.exe

@@ -1,5 +1,0 @@
-﻿Main.obj : error LNK2019: unresolved external symbol __imp_TIFFClose referenced in function main
-Main.obj : error LNK2019: unresolved external symbol __imp_TIFFGetField referenced in function main
-Main.obj : error LNK2019: unresolved external symbol __imp_TIFFOpen referenced in function main
-..\EllipseParser\lib\libtiff.lib : warning LNK4272: library machine type 'x86' conflicts with target machine type 'x64'
-C:\Users\matej\Documents\GitHub\EllipseParser\x64\Debug\EllipseParser.exe : fatal error LNK1120: 3 unresolved externals

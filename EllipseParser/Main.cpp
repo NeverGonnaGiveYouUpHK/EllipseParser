@@ -11,8 +11,6 @@ namespace fs = std::filesystem;
 #include <Eigen/Dense>
 using namespace Eigen;
 
-#define OLC_PGE_APPLICATION
-#include "olcPixelGameEngine.h"
 
 struct Point {
 	uint32 x;
@@ -40,17 +38,12 @@ struct ellipseABCDEF fitEllipse(struct Point p1, struct Point p2, struct Point p
 	CompleteOrthogonalDecomposition<Matrix<double, Dynamic, Dynamic> > cod;
 	cod.compute(mat56);
 
-	//std::cout << mat56 << std::endl;
-
 	// Find URV^T
 	MatrixXd V = cod.matrixZ().transpose();
 	MatrixXd Null_space = V.block(0, cod.rank(), V.rows(), V.cols() - cod.rank());
 	MatrixXd P = cod.colsPermutation();
 	Null_space = P * Null_space; // Unpermute the columns
 
-	//std::cout << Null_space << std::endl;
-
-	//std::cout << mat56 * Null_space << std::endl;
 
 	return {
 		Null_space(0) / Null_space(5),
@@ -65,31 +58,6 @@ struct ellipseABCDEF fitEllipse(struct Point p1, struct Point p2, struct Point p
 
 static uint16 finalAverage;
 static std::ofstream outStream("out.csv");
-
-class sampletext : public olc::PixelGameEngine {
-public:
-	uint16* content;
-	uint16 threshold;
-
-	sampletext(uint16* raster, uint16 avg) {
-		content = raster;
-		threshold = avg;
-	}
-	
-	virtual bool OnUserUpdate(float fElapsedTime) override {
-		return true;
-	}
-
-	virtual bool OnUserCreate() override {
-		for (uint32 y = 0; y < ScreenHeight(); y++) {
-			for (uint32 x = 0; x < ScreenWidth(); x++) {
-				Draw(x, y, olc::Pixel(content[y * ScreenWidth() + x] > threshold ? 0 : 255, 0, 0));
-			}
-		}
-		
-		return true;
-	}
-};
 
 typedef unsigned long long uint64;
 
@@ -177,7 +145,7 @@ void saveEllipse(bool empty, EllipseParams params, float elapsedTime, char* file
 	outStream << -params.fCenterY << ",";
 	outStream << params.fLongLength << ",";
 	outStream << params.fShortLength << ",";
-	outStream << 360 - rad2Deg(params.fAngle) << ",";
+	outStream << fmod(180 - rad2Deg(params.fAngle), 360) << ",";
 	outStream << (int)(elapsedTime * 1000) << std::endl;
 
 }
@@ -229,16 +197,17 @@ void ParseEllipse(std::string path) {
 		TIFFReadScanline(tif, raster + width * row, row, 0);
 	}
 
-	
-
-
-
 	//Time Taken
 	auto timeStart = std::chrono::system_clock::now();
 
+	uint64 average = 0;
+	for (uint32 i = 0; i < width * height; i++) {
+		average += uint64(raster[i]);
+	}
 
+	finalAverage = average / (uint64(width) * uint64(height)) * 1;
 
-	uint32 maxLuminance = 0;
+	/*uint32 maxLuminance = 0;
 
 	for (uint32 i = 0; i < width * height; i++) {
 		if (raster[i] > maxLuminance) {
@@ -257,7 +226,7 @@ void ParseEllipse(std::string path) {
 	average /= width * height;
 
 
-	finalAverage = (uint16)average;
+	finalAverage = (uint16)average;*/
 
 	bool* considered = (bool*)malloc(width * height * sizeof(bool));
 	bool* alreadyTaken = (bool*)calloc(width * height, sizeof(bool));
@@ -266,17 +235,10 @@ void ParseEllipse(std::string path) {
 		for (uint32 x = 0; x < width; x++) {
 			const uint32 index = y * width + x;
 
-			considered[index] = bool(raster[index] < fmaxLuminance * 0.45);
+			//considered[index] = bool(raster[index] < fmaxLuminance * 0.45);
+			considered[index] = bool(raster[index] < finalAverage);
 		}
 	}
-
-
-
-	sampletext game = sampletext(raster, fmaxLuminance * 0.45);
-
-	if (game.Construct(width, height, 1, 1, false, false))
-		game.Start();
-
 
 
 	std::vector<std::vector<struct Point>> sequences;
@@ -488,7 +450,6 @@ void ParseEllipse(std::string path) {
 	}
 
 	std::cout << "Best fit got rated: " << bestFitRating << " (out of " << longest.size() << ")" << std::endl;
-	//std::cout << bestFit.fCenterX << " " << -bestFit.fCenterY << " " << bestFit.fLongLength << " " << bestFit.fShortLength << " " << bestFit.fAngle << std::endl;
 
 	auto timeEnd = std::chrono::system_clock::now();
 
@@ -509,7 +470,7 @@ int main(int argc, char** argv) {
 
 	outStream << "filename,ellipse_center_x,ellipse_center_y,ellipse_majoraxis,ellipse_minoraxis,ellipse_angle,elapsed_time" << std::endl; //write the header
 
-	/*if (argc == 1) {
+	if (argc == 1) {
 		std::cout << "No input directory provided! Exiting..." << std::endl;
 		return 0;
 	}
@@ -521,9 +482,7 @@ int main(int argc, char** argv) {
 	}
 	catch (std::exception e) {
 		std::cout << argv[1] << " is not a valid folder!" << std::endl;
-	}*/
-
-	ParseEllipse("./test/2018-02-15 18.35.42.911000.tiff");
+	}
 
 	outStream.close();
 
