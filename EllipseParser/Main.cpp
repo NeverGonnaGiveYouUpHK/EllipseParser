@@ -1,3 +1,4 @@
+#define _USE_MATH_DEFINES
 #include <libtiff/tiffio.h>
 
 #include <iostream>
@@ -125,8 +126,23 @@ EllipseParams toElipseParams(ellipseABCDEF a) {
 	eOutParams.fCenterX = ((2 * a.C * a.D) - (a.B * a.E)) / ((a.B * a.B) - (4 * a.A * a.C));
 	eOutParams.fCenterY = ((2 * a.A * a.E) - (a.B * a.E)) / ((a.B * a.B) - (4 * a.A * a.C));
 
+	eOutParams.fLongLenght = -sqrt(2 * (a.A * pow(a.E, 2) + a.C * pow(a.D, 2) - a.B * a.D * a.E + (pow(a.B, 2) - 4 * a.A * a.C) * a.F) * ((a.A + a.C) + sqrt(pow((a.A - a.C), 2) + pow(a.B, 2)))) /
+							 ((a.B * a.B) - (4 * a.A * a.C));
+
+	eOutParams.fShortLength = -sqrt(2 * (a.A * pow(a.E, 2) + a.C * pow(a.D, 2) - a.B * a.D * a.E + (pow(a.B, 2) - 4 * a.A * a.C) * a.F) * ((a.A + a.C) - sqrt(pow((a.A - a.C), 2) + pow(a.B, 2)))) /
+							 ((a.B * a.B) - (4 * a.A * a.C));
+
+	if (a.B != 0) eOutParams.fAngle = atan((a.C - a.A - sqrt(pow((a.A - a.C), 2) + pow(a.B, 2))) / a.B);
+	else {
+		if (a.A <= a.C) eOutParams.fAngle = 0;
+		else eOutParams.fAngle = M_PI / 2;
+	}
 
 	return eOutParams;
+}
+
+double rad2Deg(double rad) {
+	return (rad * 180) / M_PI;
 }
 
 //filename, ellipse_center_x, ellipse_center_y, ellipse_majoraxis, ellipse_minoraxis, ellipse_angle, elapsed_time
@@ -140,7 +156,7 @@ void save(EllipseParams params, float elapsedTime, char* fileName){
 	output << params.fCenterY << ",";
 	output << params.fLongLenght << ",";
 	output << params.fShortLength << ",";
-	output << params.fAngle << ",";
+	output << rad2Deg(params.fAngle) << ",";
 	output << (elapsedTime * 1000) << std::endl;
 
 	output.close();
@@ -352,7 +368,7 @@ int main(int argc, char** argv) {
 
 	//Sampling
 	Point pSamples[5];
-	const int nMaxSampleItterations = 10; //Linear addition
+	const int nMaxSampleItterations = 1; //Linear addition
 
 
 	//Itterate through
@@ -375,7 +391,8 @@ int main(int argc, char** argv) {
 				pSamples[i] = longest[i * nPointDistance + nCurrOffset];
 			}
 
-			ellipseABCDEF eFitEllipse = fitEllipse(pSamples[0], pSamples[1], pSamples[2], pSamples[3], pSamples[4]);
+			EllipseParams eFitEllipse = toElipseParams(fitEllipse(pSamples[0], pSamples[1], pSamples[2], pSamples[3], pSamples[4]));
+			std::cout << eFitEllipse.fCenterX << " " << eFitEllipse.fCenterY << std::endl;
 
 			//Update offset for next itteration
 			nCurrOffset++;
