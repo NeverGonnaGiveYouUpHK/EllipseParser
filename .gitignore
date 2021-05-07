@@ -1,7 +1,1 @@
-*.exe
-/x64/*
 *.ipch
-/.vs/*
-/Debug/*
-/Engine3/.vs/*
-/Engine3/x64/*
