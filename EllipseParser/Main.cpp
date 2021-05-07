@@ -122,28 +122,29 @@ bool validateEdge(bool* considered, struct Point point, uint32 width, uint32 hei
 
 struct EllipseParams {
 	double fCenterX, fCenterY;
-	double fLongLenght, fShortLength;
+	double fLongLength, fShortLength;
 	double fAngle;
 };
 
-EllipseParams toElipseParams(ellipseABCDEF a) {
+EllipseParams toEllipseParams(ellipseABCDEF a) {
 
 	EllipseParams eOutParams;
 
 	eOutParams.fCenterX = ((2 * a.C * a.D) - (a.B * a.E)) / ((a.B * a.B) - (4 * a.A * a.C));
 	eOutParams.fCenterY = ((2 * a.A * a.E) - (a.B * a.D)) / ((a.B * a.B) - (4 * a.A * a.C));
 
-	eOutParams.fLongLenght = -sqrt(2 * (a.A * pow(a.E, 2) + a.C * pow(a.D, 2) - a.B * a.D * a.E + (pow(a.B, 2) - 4 * a.A * a.C) * a.F) * ((a.A + a.C) + sqrt(pow((a.A - a.C), 2) + pow(a.B, 2)))) /
+	eOutParams.fLongLength = -sqrt(2 * (a.A * pow(a.E, 2) + a.C * pow(a.D, 2) - a.B * a.D * a.E + (pow(a.B, 2) - 4 * a.A * a.C) * a.F) * ((a.A + a.C) + sqrt(pow((a.A - a.C), 2) + pow(a.B, 2)))) /
 							 ((a.B * a.B) - (4 * a.A * a.C));
 
 	eOutParams.fShortLength = -sqrt(2 * (a.A * pow(a.E, 2) + a.C * pow(a.D, 2) - a.B * a.D * a.E + (pow(a.B, 2) - 4 * a.A * a.C) * a.F) * ((a.A + a.C) - sqrt(pow((a.A - a.C), 2) + pow(a.B, 2)))) /
 							 ((a.B * a.B) - (4 * a.A * a.C));
 
-	if (a.B != 0) eOutParams.fAngle = atan((a.C - a.A - sqrt(pow((a.A - a.C), 2) + pow(a.B, 2))) / a.B);
-	else {
-		if (a.A <= a.C) eOutParams.fAngle = 0;
-		else eOutParams.fAngle = M_PI / 2;
-	}
+	if (a.B != 0)
+		eOutParams.fAngle = atan((a.C - a.A - sqrt(pow((a.A - a.C), 2) + pow(a.B, 2))) / a.B);
+	else if
+		(a.A <= a.C) eOutParams.fAngle = 0;
+	else
+		eOutParams.fAngle = M_PI / 2;
 
 	return eOutParams;
 }
@@ -161,13 +162,37 @@ void save(EllipseParams params, float elapsedTime, char* fileName){
 	output << fileName << ",";
 	output << params.fCenterX << ",";
 	output << params.fCenterY << ",";
-	output << params.fLongLenght << ",";
+	output << params.fLongLength << ",";
 	output << params.fShortLength << ",";
 	output << rad2Deg(params.fAngle) << ",";
 	output << (elapsedTime * 1000) << std::endl;
 
 	output.close();
 
+}
+
+
+double ratePoint(struct Point point, struct EllipseParams ellipse) {
+	double xi = (double)point.x;
+	double yi = (double)point.y;
+
+	xi = xi - ellipse.fCenterX;
+	yi = yi + ellipse.fCenterY;
+
+	double x = xi * cos(ellipse.fAngle) + yi * sin(ellipse.fAngle);
+	double y = xi * -sin(ellipse.fAngle) + yi * cos(ellipse.fAngle);
+
+	double angle = atan(y / x);
+
+	double distanceFromCenter = hypot(x, y);
+
+	double distanceFromCenterToEdge = ellipse.fLongLength * ellipse.fShortLength / (sqrt(pow(ellipse.fShortLength * cos(angle), 2) + pow(ellipse.fLongLength * sin(angle), 2)));
+
+	double finalDistance = abs(distanceFromCenter - distanceFromCenterToEdge);
+
+	//some gaussian trickery right here
+	double rating = exp(-(finalDistance * finalDistance) / 8);
+	return rating;
 }
 
 
@@ -316,7 +341,7 @@ void ParseEllipse(std::string path) {
 							break;
 						}
 					}
-
+					
 
 				} while (!endPath);
 
@@ -355,7 +380,8 @@ void ParseEllipse(std::string path) {
 	}
 
 	if (sequences.size() == 0) {
-		//NO ELLIPSE AT ALL
+		//SAVE EMPTY ELLIPSE
+		return;
 	}
 
 	uint32 maxLength = 0;
@@ -373,14 +399,20 @@ void ParseEllipse(std::string path) {
 
 	//Sampling
 	Point pSamples[5];
-	const int nMaxSampleItterations = 2; //Linear addition
+	const int nMaxSampleItterations = 4; //Linear addition
 
+	struct EllipseParams bestFit;
+	double bestFitRating = 0;
 
-	//Itterate through
+	//Iterate through
 	for (int nCurrItteration = 0; nCurrItteration < nMaxSampleItterations; nCurrItteration++) {
 
 		//Populate samples 
 		int nPointDistance = longest.size() / (5 + 2 * nCurrItteration);
+
+		if (nPointDistance == 0) {
+			break;
+		}
 
 		for (int i = 0; i < 5; i++) {
 			pSamples[i] = longest[i * nPointDistance];
@@ -396,18 +428,32 @@ void ParseEllipse(std::string path) {
 				pSamples[i] = longest[i * nPointDistance + nCurrOffset];
 			}
 
-			EllipseParams eFitEllipse = toElipseParams(fitEllipse(pSamples[0], pSamples[1], pSamples[2], pSamples[3], pSamples[4]));
-			//std::cout << eFitEllipse.fCenterX << " " << -eFitEllipse.fCenterY << " " << eFitEllipse.fLongLenght << " " << eFitEllipse.fShortLength << std::endl;
+			EllipseParams eFitEllipse = toEllipseParams(fitEllipse(pSamples[0], pSamples[1], pSamples[2], pSamples[3], pSamples[4]));
+			
 
-			//Update offset for next itteration
+
+			double rating = 0;
+			for (int i = 0; i < longest.size(); i++) {
+				rating += ratePoint(longest[i], eFitEllipse);
+			}
+
+			if (rating > bestFitRating) {
+				bestFitRating = rating;
+				bestFit = eFitEllipse;
+			}
+
+			//Update offset for next iteration
 			nCurrOffset++;
 		}
 	}
 
+	std::cout << "Best fit got rated: " << bestFitRating << " (out of " << longest.size() << ")" << std::endl;
+	//std::cout << bestFit.fCenterX << " " << -bestFit.fCenterY << " " << bestFit.fLongLength << " " << bestFit.fShortLength << " " << bestFit.fAngle << std::endl;
+
 	auto timeEnd = std::chrono::system_clock::now();
 
 	std::chrono::duration<float> elapsedTime = timeEnd - timeStart;
-	std::cout << "Finding best ellipse took: " << elapsedTime.count() << " s" << std::endl;
+	std::cout << "Finding the best ellipse took: " << elapsedTime.count() << " s" << std::endl;
 
 	TIFFClose(tif);
 	//free mallocs
@@ -429,7 +475,7 @@ int main(int argc, char** argv) {
 		std::cout << argv[1] << " is not a valid folder!" << std::endl;
 	}
 
-
+	//ParseEllipse("./test/2018-02-15 19.22.13.141000.tiff");
 
 	/*sampletext game = sampletext(raster);
 
