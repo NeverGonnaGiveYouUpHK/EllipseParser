@@ -8,7 +8,7 @@ This program has been created for Hack Košice Marathon - Thermo Fisher Challang
 
 Binaries
 ----------------
-You can download binaries directly over at [kotol.cloud](https://kotol.cloud/statis/EllipseParserx86.zip)
+You can download binaries directly over at [kotol.cloud](https://kotol.cloud/static/EllipseParserx86.zip)
 
 All binaries are x86 (32-bit)
 
