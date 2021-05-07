@@ -29,21 +29,26 @@ struct ellipseABCDEF {
 struct ellipseABCDEF fitEllipse(struct Point p1, struct Point p2, struct Point p3, struct Point p4, struct Point p5) {
 	Matrix<double, 5, 6> mat56(5, 6);
 	mat56 << 
-		(double)p1.x * (double)p1.x, (double)p1.y * (double)p1.y, (double)p1.x * (double)p1.y, (double)p1.x, (double)p1.y, 1,
-		(double)p2.x * (double)p2.x, (double)p2.y * (double)p2.y, (double)p2.x * (double)p2.y, (double)p2.x, (double)p2.y, 1,
-		(double)p3.x * (double)p3.x, (double)p3.y * (double)p3.y, (double)p3.x * (double)p3.y, (double)p3.x, (double)p3.y, 1,
-		(double)p4.x * (double)p4.x, (double)p4.y * (double)p4.y, (double)p4.x * (double)p4.y, (double)p4.x, (double)p4.y, 1,
-		(double)p5.x * (double)p5.x, (double)p5.y * (double)p5.y, (double)p5.x * (double)p5.y, (double)p5.x, (double)p5.y, 1;
+		(double)p1.x * (double)p1.x, (double)p1.x * -(double)p1.y, (double)p1.y * (double)p1.y, (double)p1.x, -(double)p1.y, 1,
+		(double)p2.x * (double)p2.x, (double)p2.x * -(double)p2.y, (double)p2.y * (double)p2.y, (double)p2.x, -(double)p2.y, 1,
+		(double)p3.x * (double)p3.x, (double)p3.x * -(double)p3.y, (double)p3.y * (double)p3.y, (double)p3.x, -(double)p3.y, 1,
+		(double)p4.x * (double)p4.x, (double)p4.x * -(double)p4.y, (double)p4.y * (double)p4.y, (double)p4.x, -(double)p4.y, 1,
+		(double)p5.x * (double)p5.x, (double)p5.x * -(double)p5.y, (double)p5.y * (double)p5.y, (double)p5.x, -(double)p5.y, 1;
 	
 	CompleteOrthogonalDecomposition<Matrix<double, Dynamic, Dynamic> > cod;
 	cod.compute(mat56);
 
+	//std::cout << mat56 << std::endl;
 
 	// Find URV^T
 	MatrixXd V = cod.matrixZ().transpose();
 	MatrixXd Null_space = V.block(0, cod.rank(), V.rows(), V.cols() - cod.rank());
 	MatrixXd P = cod.colsPermutation();
 	Null_space = P * Null_space; // Unpermute the columns
+
+	//std::cout << Null_space << std::endl;
+
+	//std::cout << mat56 * Null_space << std::endl;
 
 	return {
 		Null_space(0) / Null_space(5),
@@ -124,7 +129,7 @@ EllipseParams toElipseParams(ellipseABCDEF a) {
 	EllipseParams eOutParams;
 
 	eOutParams.fCenterX = ((2 * a.C * a.D) - (a.B * a.E)) / ((a.B * a.B) - (4 * a.A * a.C));
-	eOutParams.fCenterY = ((2 * a.A * a.E) - (a.B * a.E)) / ((a.B * a.B) - (4 * a.A * a.C));
+	eOutParams.fCenterY = ((2 * a.A * a.E) - (a.B * a.D)) / ((a.B * a.B) - (4 * a.A * a.C));
 
 	eOutParams.fLongLenght = -sqrt(2 * (a.A * pow(a.E, 2) + a.C * pow(a.D, 2) - a.B * a.D * a.E + (pow(a.B, 2) - 4 * a.A * a.C) * a.F) * ((a.A + a.C) + sqrt(pow((a.A - a.C), 2) + pow(a.B, 2)))) /
 							 ((a.B * a.B) - (4 * a.A * a.C));
@@ -165,11 +170,21 @@ void save(EllipseParams params, float elapsedTime, char* fileName){
 
 
 int main(int argc, char** argv) {
+	/*struct ellipseABCDEF e = fitEllipse(
+		{ 1.34, -0.396 },
+		{ 0.483, -2.194 },
+		{ 1.801, -3.136 }, 
+		{ 0.683, -0.154 },
+		{ 1.985, -1.072 }
+	);
 
-	//Time Taken
-	auto timeStart = std::chrono::system_clock::now();
 
 
+	std::cout << e.A << " " << e.B << " " << e.C << " " << e.D << " " << e.E << " " << e.F << " ";
+
+	return 0;
+	*/
+	
 	TIFF* tif = TIFFOpen("./test/2018-02-15 19.22.13.141000.tiff", "r");
 
 	uint32 width, height;
@@ -191,6 +206,11 @@ int main(int argc, char** argv) {
 	}
 
 	std::cout << average / (uint64(width) * uint64(height)) << std::endl;
+
+
+	//Time Taken
+	auto timeStart = std::chrono::system_clock::now();
+
 
 	finalAverage = average / (uint64(width) * uint64(height)) * 1;
 
@@ -298,7 +318,7 @@ int main(int argc, char** argv) {
 							paths[part].push_back({ newX, newY });
 
 
-							printf("adding %lu %lu\n", newX, newY);
+							//printf("adding %lu %lu\n", newX, newY);
 
 							newX = tested.x;
 							newY = tested.y;
@@ -325,7 +345,7 @@ int main(int argc, char** argv) {
 				finalPath.reserve(sizePart1 + sizePart2);
 
 				for (int i = sizePart1 - 1; i >= 0; i--) {
-					printf("%lu\n", i);
+					//printf("%lu\n", i);
 					finalPath.push_back(paths[0][i]);
 					
 				}
@@ -368,7 +388,7 @@ int main(int argc, char** argv) {
 
 	//Sampling
 	Point pSamples[5];
-	const int nMaxSampleItterations = 1; //Linear addition
+	const int nMaxSampleItterations = 2; //Linear addition
 
 
 	//Itterate through
@@ -392,7 +412,7 @@ int main(int argc, char** argv) {
 			}
 
 			EllipseParams eFitEllipse = toElipseParams(fitEllipse(pSamples[0], pSamples[1], pSamples[2], pSamples[3], pSamples[4]));
-			std::cout << eFitEllipse.fCenterX << " " << eFitEllipse.fCenterY << std::endl;
+			std::cout << eFitEllipse.fCenterX << " " << -eFitEllipse.fCenterY << " " << eFitEllipse.fLongLenght << " " << eFitEllipse.fShortLength << std::endl;
 
 			//Update offset for next itteration
 			nCurrOffset++;
