@@ -2,6 +2,7 @@
 
 EllipseParser allows you to fit the Ellipse into the set of TIFF images. This program is a command line utility. Although it provides some output directly to user, all the neceseary information about ellipses will be saved as \*.csv file.
 
+The program is fully algorithmical and doesn't use any AI. It might struggle with harder fits or with fits with grid artifacts in them. 
 
 This program has been created for Hack Košice Marathon - Thermo Fisher Challange. Learn more at [hackkosice.com](https://hackkosice.com/marathon/thermo-fisher/) 
 
